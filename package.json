@@ -1,6 +1,6 @@
 {
   "name": "action-pr-label-assistant",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "A GitHub action that provides guidance on what labels can/should be applied to Pull Requests.",
   "main": "lib/main.js",
