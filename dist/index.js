@@ -3328,7 +3328,9 @@ exports.upsertGuidance = (options) => __awaiter(void 0, void 0, void 0, function
         }
     }
     else {
-        client.issues.createComment(Object.assign(Object.assign({}, github_1.context.repo), { number: github_1.context.payload.pull_request.number, body: rendered }));
+        client.issues.createComment(Object.assign(Object.assign({}, github_1.context.repo), { 
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            issue_number: github_1.context.payload.pull_request.number, body: rendered }));
     }
 });
 

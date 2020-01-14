@@ -138,7 +138,8 @@ export const upsertGuidance = async (options: Options): Promise<void> => {
   } else {
     client.issues.createComment({
       ...context.repo,
-      number: context.payload.pull_request.number,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      issue_number: context.payload.pull_request.number,
       body: rendered
     })
   }
