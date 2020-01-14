@@ -1,8 +1,8 @@
 {
-  "name": "typescript-action",
+  "name": "action-pr-label-assistant",
   "version": "0.0.0",
   "private": true,
-  "description": "TypeScript template action",
+  "description": "A GitHub action that provides guidance on what labels can/should be applied to Pull Requests.",
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
@@ -15,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/fountainhead/action-pr-label-assistant.git"
   },
   "keywords": [
     "actions",
     "node",
     "setup"
   ],
-  "author": "YourNameOrOrganization",
+  "author": "Fountainhead Technologies Ltd.",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.2.0",
