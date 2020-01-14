@@ -3219,7 +3219,12 @@ function run() {
                 pre: core.getInput('pre') || '',
                 post: core.getInput('post') || ''
             });
-            for (const { label, state } of yield presence_1.presence({ client, repo, prNumber, whitelist })) {
+            for (const { label, state } of yield presence_1.presence({
+                client,
+                repo,
+                prNumber,
+                whitelist
+            })) {
                 core.setOutput(label, state);
             }
         }
@@ -10706,7 +10711,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const slugify_1 = __importDefault(__webpack_require__(950));
 const node_emoji_1 = __webpack_require__(86);
-exports.sanitizeName = (name) => slugify_1.default(node_emoji_1.emojify(name), { lower: true });
+const REMOVE_REGEX = /[^a-zA-Z0-9 -]/g;
+exports.sanitizeName = (name) => slugify_1.default(node_emoji_1.emojify(name), {
+    lower: true,
+    remove: REMOVE_REGEX
+});
 
 
 /***/ }),
