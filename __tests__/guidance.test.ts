@@ -30,10 +30,14 @@ describe('repoLabels', () => {
       ]
     })
 
-    const result = await guidance.repoLabels(mockClient as any, [
-      'test',
-      'test-two'
-    ])
+    const result = await guidance.repoLabels(
+      mockClient as any,
+      ['test', 'test-two'],
+      {
+        owner: 'test-org',
+        repo: 'test'
+      }
+    )
 
     expect(result).toEqual([
       {
