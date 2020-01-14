@@ -1,16 +1,25 @@
 import * as core from '@actions/core'
-import {wait} from './wait'
+import {GitHub, context} from '@actions/github'
+
+import {upsertGuidance} from './guidance'
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    if (!context.payload.pull_request) {
+      throw new Error(
+        'Only events of type `pull_request` are supported by this Action.'
+      )
+    }
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    await upsertGuidance({
+      client: new GitHub(core.getInput('token', {required: true})),
 
-    core.setOutput('time', new Date().toTimeString())
+      id: core.getInput('id', {required: true}),
+      whitelist: core.getInput('whitelist', {required: true}).split(','),
+
+      pre: core.getInput('pre') || '',
+      post: core.getInput('post') || ''
+    })
   } catch (error) {
     core.setFailed(error.message)
   }
