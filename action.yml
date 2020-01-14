@@ -1,10 +1,23 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'PR Label Assistant'
+description: 'Provide guidance on what labels can/should be applied to Pull Requests.'
+author: 'Fountainhead Technologies Ltd.'
+branding:
+  icon: 'tag'
+  color: 'blue'
 inputs:
-  myInput:              # change this
-    description: 'input description here'
-    default: 'default value if applicable'
+  token:
+    description: 'The GitHub token to use for making API requests.'
+    required: true
+  id:
+    description: 'Some identifier that is unique on a per-repository basis.'
+    required: true
+  whitelist:
+    description: 'A comma-separated list of slugified, lowercase label names to match against.'
+    required: true
+  pre:
+    description: 'Some preamble text to display at the start of the guidance comment.'
+  post:
+    description: 'Some text to display at the end of the guidance comment.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
