@@ -19,7 +19,7 @@ async function run(): Promise<void> {
       post: core.getInput('post') || ''
     })
 
-    for (const [label, state] of await presence({client, whitelist})) {
+    for (const {label, state} of await presence({client, whitelist})) {
       core.setOutput(label, state)
     }
   } catch (error) {

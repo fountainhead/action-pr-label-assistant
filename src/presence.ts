@@ -1,4 +1,5 @@
 import {GitHub, context} from '@actions/github'
+import * as core from '@actions/core'
 
 import {sanitizeName} from './common'
 
@@ -7,7 +8,10 @@ interface Options {
   whitelist: string[]
 }
 
-type Presence = [string, string]
+interface Presence {
+  label: string
+  state: 'present' | 'absent'
+}
 
 export const presence = async (options: Options): Promise<Presence[]> => {
   if (!context.payload.pull_request) {
@@ -23,10 +27,12 @@ export const presence = async (options: Options): Promise<Presence[]> => {
     issue_number: context.payload.pull_request.number
   })
 
-  return whitelist.map(label => [
+  core.debug(JSON.stringify(whitelist, null, 2))
+  core.debug(JSON.stringify(appliedLabels, null, 2))
+  return whitelist.map(label => ({
     label,
-    appliedLabels.find(({name}) => name === sanitizeName(label))
+    state: appliedLabels.find(({name}) => name === sanitizeName(label))
       ? 'present'
       : 'absent'
-  ])
+  }))
 }

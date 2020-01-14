@@ -3212,7 +3212,7 @@ function run() {
                 pre: core.getInput('pre') || '',
                 post: core.getInput('post') || ''
             });
-            for (const [label, state] of yield presence_1.presence({ client, whitelist })) {
+            for (const { label, state } of yield presence_1.presence({ client, whitelist })) {
                 core.setOutput(label, state);
             }
         }
@@ -6835,8 +6835,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const github_1 = __webpack_require__(469);
+const core = __importStar(__webpack_require__(470));
 const common_1 = __webpack_require__(865);
 exports.presence = (options) => __awaiter(void 0, void 0, void 0, function* () {
     if (!github_1.context.payload.pull_request) {
@@ -6846,12 +6854,14 @@ exports.presence = (options) => __awaiter(void 0, void 0, void 0, function* () {
     const { data: appliedLabels } = yield client.issues.listLabelsOnIssue(Object.assign(Object.assign({}, github_1.context.repo), { 
         // eslint-disable-next-line @typescript-eslint/camelcase
         issue_number: github_1.context.payload.pull_request.number }));
-    return whitelist.map(label => [
+    core.debug(JSON.stringify(whitelist, null, 2));
+    core.debug(JSON.stringify(appliedLabels, null, 2));
+    return whitelist.map(label => ({
         label,
-        appliedLabels.find(({ name }) => name === common_1.sanitizeName(label))
+        state: appliedLabels.find(({ name }) => name === common_1.sanitizeName(label))
             ? 'present'
             : 'absent'
-    ]);
+    }));
 });
 
 
