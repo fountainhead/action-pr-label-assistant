@@ -3199,19 +3199,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
 const github_1 = __webpack_require__(469);
 const guidance_1 = __webpack_require__(233);
+const presence_1 = __webpack_require__(375);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            if (!github_1.context.payload.pull_request) {
-                throw new Error('Only events of type `pull_request` are supported by this Action.');
-            }
+            const client = new github_1.GitHub(core.getInput('token', { required: true }));
+            const whitelist = core.getInput('whitelist', { required: true }).split(',');
             yield guidance_1.upsertGuidance({
-                client: new github_1.GitHub(core.getInput('token', { required: true })),
+                client,
+                whitelist,
                 id: core.getInput('id', { required: true }),
-                whitelist: core.getInput('whitelist', { required: true }).split(','),
                 pre: core.getInput('pre') || '',
                 post: core.getInput('post') || ''
             });
+            for (const [label, state] of yield presence_1.presence({ client, whitelist })) {
+                core.setOutput(label, state);
+            }
         }
         catch (error) {
             core.setFailed(error.message);
@@ -3251,19 +3254,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const github_1 = __webpack_require__(469);
 const node_emoji_1 = __webpack_require__(86);
 const querystring_1 = __webpack_require__(191);
-const slugify_1 = __importDefault(__webpack_require__(950));
-exports.sanitizeName = (name) => slugify_1.default(node_emoji_1.emojify(name), { lower: true });
+const common_1 = __webpack_require__(865);
 exports.repoLabels = (client, whitelist) => __awaiter(void 0, void 0, void 0, function* () {
     const { data } = yield client.issues.listLabelsForRepo(github_1.context.repo);
     return data
-        .filter(({ name }) => whitelist.includes(exports.sanitizeName(name)))
+        .filter(({ name }) => whitelist.includes(common_1.sanitizeName(name)))
         .map(({ name, color, description }) => ({ name, color, description }));
 });
 exports.renderLabel = (label) => {
@@ -3298,7 +3297,9 @@ exports.matchingGuidanceComment = (client, id) => __awaiter(void 0, void 0, void
     if (!github_1.context.payload.pull_request) {
         throw new Error('Only events of type `pull_request` are supported by this Action.');
     }
-    const options = client.issues.listComments.endpoint.merge(Object.assign(Object.assign({}, github_1.context.repo), { number: github_1.context.payload.pull_request.number }));
+    const options = client.issues.listComments.endpoint.merge(Object.assign(Object.assign({}, github_1.context.repo), { 
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        issue_number: github_1.context.payload.pull_request.number }));
     const matchingComments = yield client.paginate(options, (response, done) => {
         for (const comment of response.data) {
             if (exports.matchesIdTag(id, comment.body)) {
@@ -6816,6 +6817,42 @@ function octokitDebug(octokit) {
       });
   });
 }
+
+
+/***/ }),
+
+/***/ 375:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const github_1 = __webpack_require__(469);
+const common_1 = __webpack_require__(865);
+exports.presence = (options) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!github_1.context.payload.pull_request) {
+        throw new Error('Only events of type `pull_request` are supported by this Action.');
+    }
+    const { client, whitelist } = options;
+    const { data: appliedLabels } = yield client.issues.listLabelsOnIssue(Object.assign(Object.assign({}, github_1.context.repo), { 
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        issue_number: github_1.context.payload.pull_request.number }));
+    return whitelist.map(label => [
+        label,
+        appliedLabels.find(({ name }) => name === common_1.sanitizeName(label))
+            ? 'present'
+            : 'absent'
+    ]);
+});
 
 
 /***/ }),
@@ -10658,6 +10695,22 @@ function authenticationBeforeRequest(state, options) {
       options.headers.authorization = withAuthorizationPrefix(authorization);
     });
 }
+
+
+/***/ }),
+
+/***/ 865:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const slugify_1 = __importDefault(__webpack_require__(950));
+const node_emoji_1 = __webpack_require__(86);
+exports.sanitizeName = (name) => slugify_1.default(node_emoji_1.emojify(name), { lower: true });
 
 
 /***/ }),

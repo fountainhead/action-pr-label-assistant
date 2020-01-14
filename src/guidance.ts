@@ -2,16 +2,14 @@ import {GitHub, context} from '@actions/github'
 import Octokit from '@octokit/rest'
 import {emojify} from 'node-emoji'
 import {stringify} from 'querystring'
-import slugify from 'slugify'
+
+import {sanitizeName} from './common'
 
 interface Label {
   name: string
   color: string
   description: string
 }
-
-export const sanitizeName = (name: string): string =>
-  slugify(emojify(name), {lower: true})
 
 export const repoLabels = async (
   client: GitHub,
@@ -81,7 +79,8 @@ export const matchingGuidanceComment = async (
 
   const options = client.issues.listComments.endpoint.merge({
     ...context.repo,
-    number: context.payload.pull_request.number
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    issue_number: context.payload.pull_request.number
   })
 
   const matchingComments: Comment[] = await client.paginate(
