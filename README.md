@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/fountainhead/action-pr-label-assistant/actions"><img alt="typescript-action status" src="https://github.com/fountainhead/action-pr-label-assistant/workflows/build-test/badge.svg"></a>
+  <a href="https://github.com/fountainhead/action-pr-label-assistant/actions"><img alt="typescript-action status" src="https://github.com/fountainhead/action-pr-label-assistant/workflows/build/badge.svg"></a>
 </p>
 
 # GitHub Action: PR Label Assistant
