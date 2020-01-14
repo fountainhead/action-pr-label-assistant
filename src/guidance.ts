@@ -13,9 +13,10 @@ interface Label {
 
 export const repoLabels = async (
   client: GitHub,
-  whitelist: string[]
+  whitelist: string[],
+  repo: typeof context.repo
 ): Promise<Label[]> => {
-  const {data} = await client.issues.listLabelsForRepo(context.repo)
+  const {data} = await client.issues.listLabelsForRepo(repo)
 
   return data
     .filter(({name}) => whitelist.includes(sanitizeName(name)))
@@ -69,18 +70,14 @@ interface Comment {
 
 export const matchingGuidanceComment = async (
   client: GitHub,
-  id: string
+  id: string,
+  prNumber: number,
+  repo: typeof context.repo
 ): Promise<Comment | undefined> => {
-  if (!context.payload.pull_request) {
-    throw new Error(
-      'Only events of type `pull_request` are supported by this Action.'
-    )
-  }
-
   const options = client.issues.listComments.endpoint.merge({
-    ...context.repo,
+    ...repo,
     // eslint-disable-next-line @typescript-eslint/camelcase
-    issue_number: context.payload.pull_request.number
+    issue_number: prNumber
   })
 
   const matchingComments: Comment[] = await client.paginate(
@@ -108,27 +105,23 @@ interface Options {
   whitelist: string[]
   pre: string
   post: string
+  prNumber: number
+  repo: typeof context.repo
 }
 
 export const upsertGuidance = async (options: Options): Promise<void> => {
-  if (!context.payload.pull_request) {
-    throw new Error(
-      'Only events of type `pull_request` are supported by this Action.'
-    )
-  }
+  const {client, id, whitelist, pre, post, prNumber, repo} = options
 
-  const {client, id, whitelist, pre, post} = options
-
-  const labels = await repoLabels(client, whitelist)
+  const labels = await repoLabels(client, whitelist, repo)
 
   const rendered = renderGuidance(id, labels, pre, post)
 
-  const match = await matchingGuidanceComment(client, id)
+  const match = await matchingGuidanceComment(client, id, prNumber, repo)
 
   if (match) {
     if (match.body !== rendered) {
       client.issues.updateComment({
-        ...context.repo,
+        ...repo,
         // eslint-disable-next-line @typescript-eslint/camelcase
         comment_id: match.id,
         body: rendered
@@ -136,9 +129,9 @@ export const upsertGuidance = async (options: Options): Promise<void> => {
     }
   } else {
     client.issues.createComment({
-      ...context.repo,
+      ...repo,
       // eslint-disable-next-line @typescript-eslint/camelcase
-      issue_number: context.payload.pull_request.number,
+      issue_number: prNumber,
       body: rendered
     })
   }

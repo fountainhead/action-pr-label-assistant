@@ -3203,16 +3203,23 @@ const presence_1 = __webpack_require__(375);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            if (!github_1.context.payload.pull_request) {
+                throw new Error(`This Action is only supported on 'pull_request' events.`);
+            }
             const client = new github_1.GitHub(core.getInput('token', { required: true }));
             const whitelist = core.getInput('whitelist', { required: true }).split(',');
+            const { repo } = github_1.context;
+            const prNumber = github_1.context.payload.pull_request.number;
             yield guidance_1.upsertGuidance({
                 client,
+                repo,
+                prNumber,
                 whitelist,
                 id: core.getInput('id', { required: true }),
                 pre: core.getInput('pre') || '',
                 post: core.getInput('post') || ''
             });
-            for (const { label, state } of yield presence_1.presence({ client, whitelist })) {
+            for (const { label, state } of yield presence_1.presence({ client, repo, prNumber, whitelist })) {
                 core.setOutput(label, state);
             }
         }
@@ -3255,12 +3262,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const github_1 = __webpack_require__(469);
 const node_emoji_1 = __webpack_require__(86);
 const querystring_1 = __webpack_require__(191);
 const common_1 = __webpack_require__(865);
-exports.repoLabels = (client, whitelist) => __awaiter(void 0, void 0, void 0, function* () {
-    const { data } = yield client.issues.listLabelsForRepo(github_1.context.repo);
+exports.repoLabels = (client, whitelist, repo) => __awaiter(void 0, void 0, void 0, function* () {
+    const { data } = yield client.issues.listLabelsForRepo(repo);
     return data
         .filter(({ name }) => whitelist.includes(common_1.sanitizeName(name)))
         .map(({ name, color, description }) => ({ name, color, description }));
@@ -3293,13 +3299,10 @@ ${post}
 
 ${exports.idTag(id)}`;
 };
-exports.matchingGuidanceComment = (client, id) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!github_1.context.payload.pull_request) {
-        throw new Error('Only events of type `pull_request` are supported by this Action.');
-    }
-    const options = client.issues.listComments.endpoint.merge(Object.assign(Object.assign({}, github_1.context.repo), { 
+exports.matchingGuidanceComment = (client, id, prNumber, repo) => __awaiter(void 0, void 0, void 0, function* () {
+    const options = client.issues.listComments.endpoint.merge(Object.assign(Object.assign({}, repo), { 
         // eslint-disable-next-line @typescript-eslint/camelcase
-        issue_number: github_1.context.payload.pull_request.number }));
+        issue_number: prNumber }));
     const matchingComments = yield client.paginate(options, (response, done) => {
         for (const comment of response.data) {
             if (exports.matchesIdTag(id, comment.body)) {
@@ -3314,24 +3317,21 @@ exports.matchingGuidanceComment = (client, id) => __awaiter(void 0, void 0, void
     return matchingComments[0];
 });
 exports.upsertGuidance = (options) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!github_1.context.payload.pull_request) {
-        throw new Error('Only events of type `pull_request` are supported by this Action.');
-    }
-    const { client, id, whitelist, pre, post } = options;
-    const labels = yield exports.repoLabels(client, whitelist);
+    const { client, id, whitelist, pre, post, prNumber, repo } = options;
+    const labels = yield exports.repoLabels(client, whitelist, repo);
     const rendered = exports.renderGuidance(id, labels, pre, post);
-    const match = yield exports.matchingGuidanceComment(client, id);
+    const match = yield exports.matchingGuidanceComment(client, id, prNumber, repo);
     if (match) {
         if (match.body !== rendered) {
-            client.issues.updateComment(Object.assign(Object.assign({}, github_1.context.repo), { 
+            client.issues.updateComment(Object.assign(Object.assign({}, repo), { 
                 // eslint-disable-next-line @typescript-eslint/camelcase
                 comment_id: match.id, body: rendered }));
         }
     }
     else {
-        client.issues.createComment(Object.assign(Object.assign({}, github_1.context.repo), { 
+        client.issues.createComment(Object.assign(Object.assign({}, repo), { 
             // eslint-disable-next-line @typescript-eslint/camelcase
-            issue_number: github_1.context.payload.pull_request.number, body: rendered }));
+            issue_number: prNumber, body: rendered }));
     }
 });
 
@@ -6835,30 +6835,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const github_1 = __webpack_require__(469);
-const core = __importStar(__webpack_require__(470));
 const common_1 = __webpack_require__(865);
 exports.presence = (options) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!github_1.context.payload.pull_request) {
-        throw new Error('Only events of type `pull_request` are supported by this Action.');
-    }
-    const { client, whitelist } = options;
-    const { data: appliedLabels } = yield client.issues.listLabelsOnIssue(Object.assign(Object.assign({}, github_1.context.repo), { 
+    const { client, whitelist, prNumber, repo } = options;
+    const { data: appliedLabels } = yield client.issues.listLabelsOnIssue(Object.assign(Object.assign({}, repo), { 
         // eslint-disable-next-line @typescript-eslint/camelcase
-        issue_number: github_1.context.payload.pull_request.number }));
-    core.debug(JSON.stringify(whitelist, null, 2));
-    core.debug(JSON.stringify(appliedLabels, null, 2));
+        issue_number: prNumber }));
     return whitelist.map(label => ({
         label,
-        state: appliedLabels.find(({ name }) => name === common_1.sanitizeName(label))
+        state: appliedLabels.find(({ name }) => label === common_1.sanitizeName(name))
             ? 'present'
             : 'absent'
     }));

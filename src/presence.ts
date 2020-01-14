@@ -1,11 +1,12 @@
 import {GitHub, context} from '@actions/github'
-import * as core from '@actions/core'
 
 import {sanitizeName} from './common'
 
 interface Options {
   client: GitHub
   whitelist: string[]
+  prNumber: number
+  repo: typeof context.repo
 }
 
 interface Presence {
@@ -14,24 +15,17 @@ interface Presence {
 }
 
 export const presence = async (options: Options): Promise<Presence[]> => {
-  if (!context.payload.pull_request) {
-    throw new Error(
-      'Only events of type `pull_request` are supported by this Action.'
-    )
-  }
+  const {client, whitelist, prNumber, repo} = options
 
-  const {client, whitelist} = options
   const {data: appliedLabels} = await client.issues.listLabelsOnIssue({
-    ...context.repo,
+    ...repo,
     // eslint-disable-next-line @typescript-eslint/camelcase
-    issue_number: context.payload.pull_request.number
+    issue_number: prNumber
   })
 
-  core.debug(JSON.stringify(whitelist, null, 2))
-  core.debug(JSON.stringify(appliedLabels, null, 2))
   return whitelist.map(label => ({
     label,
-    state: appliedLabels.find(({name}) => name === sanitizeName(label))
+    state: appliedLabels.find(({name}) => label === sanitizeName(name))
       ? 'present'
       : 'absent'
   }))
